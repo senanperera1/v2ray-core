@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout your forked repo (already has your code)
+      # 1️⃣ Checkout your forked repo
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -20,10 +20,11 @@ jobs:
         with:
           go-version: "1.21"
 
-      # 3️⃣ Install gomobile
-      - name: Install gomobile
+      # 3️⃣ Install gomobile and ensure bind package is available
+      - name: Install gomobile and bind
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
+          go get golang.org/x/mobile/bind@latest
           gomobile init
 
       # 4️⃣ Setup Android NDK
@@ -32,16 +33,17 @@ jobs:
         with:
           ndk-version: r25c
 
-      # 5️⃣ Apply patch files (protect, pagefile, optional extra functions)
+      # 5️⃣ Apply patch files (optional: protect, pagefile, extra functions)
       - name: Apply patch files
         run: |
-          cp patch/*.go ./main/
+          cp patch/*.go ./main/  # adjust path to your Go module folder
 
       # 6️⃣ Build the AAR (ARM64 only)
       - name: Build AAR (ARM64)
         run: |
+          cd main  # adjust if your go.mod is in a different folder
           go mod tidy
-          gomobile bind -target=android/arm64 -androidapi=21 -o libv2ray.aar .
+          gomobile bind -target=android/arm64 -androidapi=21 -o ../libv2ray.aar .
 
       # 7️⃣ Upload the resulting AAR
       - name: Upload AAR artifact
