@@ -1,4 +1,4 @@
-name: Build AndroidLibXrayLite AAR
+name: Build V2Ray Core AAR (ARM64)
 
 on:
   push:
@@ -10,43 +10,47 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout your repository
+      # 1️⃣ Checkout your repository (with patches folder)
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ Set up Go
+      # 2️⃣ Clone your forked v2ray-core repo
+      - name: Clone v2ray-core
+        run: git clone https://github.com/<YOUR_USERNAME>/v2ray-core.git
+
+      # 3️⃣ Copy patch files into mobile package
+      - name: Apply patch files
+        run: |
+          mkdir -p v2ray-core/v5/mobile
+          cp patch/*.go v2ray-core/v5/mobile/
+
+      # 4️⃣ Set up Go
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version: "1.21"
 
-      # 3️⃣ Install gomobile and bind package
+      # 5️⃣ Install gomobile
       - name: Install gomobile
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
-          go get golang.org/x/mobile/bind@latest
           gomobile init
 
-      # 4️⃣ Setup Android NDK
+      # 6️⃣ Set up Android NDK
       - name: Setup NDK
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
 
-      # 5️⃣ Copy your patch files (protect.go, pagefile.go, optional)
-      - name: Apply patch files
+      # 7️⃣ Build AAR for ARM64 only
+      - name: Build AAR
         run: |
-          cp patch/*.go ./AndroidLibXrayLite/  # adjust path if your Go module folder is different
-
-      # 6️⃣ Build AAR (ARM64 only)
-      - name: Build AAR (ARM64)
-        run: |
-          cd AndroidLibXrayLite  # point to your library package
+          cd v2ray-core/v5/mobile
           go mod tidy
-          gomobile bind -target=android/arm64 -androidapi=21 -o ../libv2ray.aar .
+          gomobile bind -target=android/arm64 -androidapi=21 -o ../../../libv2ray.aar .
 
-      # 7️⃣ Upload the AAR artifact
-      - name: Upload AAR artifact
+      # 8️⃣ Upload AAR as artifact
+      - name: Upload libv2ray.aar
         uses: actions/upload-artifact@v4
         with:
           name: libv2ray
